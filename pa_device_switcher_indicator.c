@@ -13,12 +13,7 @@ enum {
     JOAPA_SINK, JOAPA_SOURCE
 };
 
-typedef struct joapa_dev_port_pair {
-    int device_index;
-    int port_index;
-    int type;  
-} joapa_dev_port_pair_t;
-
+// Information about a port
 typedef struct pa_portlist {
     char name[512];
     char description[256];
@@ -26,6 +21,7 @@ typedef struct pa_portlist {
     uint8_t initialized;
 } pa_portlist_t;
 
+// Information about a device
 typedef struct pa_devicelist {
         char name[512];
         char description[256];
@@ -37,28 +33,11 @@ typedef struct pa_devicelist {
         pa_portlist_t active_port;
 } pa_devicelist_t;
 
+// Combination of the two above
 typedef struct pa_device_port {
     pa_devicelist_t device;
     pa_portlist_t port;
 } pa_device_port_t;
-
-void print_portlist(pa_portlist_t port) {
-    printf("\t%s\n", port.name);
-    printf("\t\t%s\n", port.description);
-}
-
-void print_devicelist(pa_devicelist_t device) {
-    printf("Description: %s\n", device.description);
-    printf("Name: %s \n", device.name);
-    printf("Index: %d \n", device.index);
-    printf("Ports: %d \n", device.n_ports);
-    
-    int i;
-    for(i = 0; i < device.n_ports; i++) {
-        print_portlist(device.ports[i]);
-    }
-    printf("\n");
-}
 
 typedef struct pa_clientlist {
     uint32_t index;
@@ -102,8 +81,6 @@ int main(int argc, char *argv[]) {
 }
 
 static void activate_action (GtkWidget *button, pa_device_port_t *data) {
-    
-    
     char str[512];
     strcpy(str, data->device.description);
     strcat(str, "\n");
@@ -118,7 +95,7 @@ static void activate_action (GtkWidget *button, pa_device_port_t *data) {
     set_active_port(data->device, data->port);
 }
 
-void *create_list_for_type(pa_devicelist_t *list) {
+void create_list_for_type(pa_devicelist_t *list) {
     int i, j;
     for(i = 0; i < 16; i++) {
         if(!list[i].initialized)
@@ -157,11 +134,11 @@ void fill_app_indicator(pa_devicelist_t *input, pa_devicelist_t *output) {
     add_separator_to_menu();
     
     GtkWidget *btn_quit = gtk_menu_item_new_with_label("Quit");
-        gtk_menu_append(GTK_MENU_SHELL (menu),btn_quit);
-        gtk_widget_show(btn_quit);
+    gtk_menu_append(GTK_MENU_SHELL (menu),btn_quit);
+    gtk_widget_show(btn_quit);
     
     g_signal_connect (btn_quit, "activate",
-                    G_CALLBACK (gtk_main_quit), NULL);
+            G_CALLBACK (gtk_main_quit), NULL);
                     
     app_indicator_set_menu (indicator, GTK_MENU (menu));
 }
@@ -177,14 +154,14 @@ void init_app_indicator(int argc, char **argv) {
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
     g_signal_connect (G_OBJECT (window),
-                    "destroy",
-                    G_CALLBACK (gtk_main_quit),
-                    NULL);
+            "destroy",
+            G_CALLBACK (gtk_main_quit),
+            NULL);
 
     /* Indicator */
-    indicator = app_indicator_new ("example-simple-client",
-                                 "indicator-messages",
-                                 APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+    indicator = app_indicator_new ("pa-device-switcher-indicator",
+            "indicator-messages",
+            APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
 
     menu = gtk_menu_new();
     
@@ -198,23 +175,9 @@ void init_app_indicator(int argc, char **argv) {
 void set_active_port_cb(pa_context *c, int success, void *userdata) {
     //pa_device_port_t set = *userdata;
     //printf("%s %s", set.device.description, set.port.description);
-    printf("SUCCESS %d\n", success);
 }
 
 int set_active_port(pa_devicelist_t device, pa_portlist_t port) {
-    
-    switch(device.type) {
-        case JOAPA_SOURCE:
-            printf("Switching source:\n");
-            break;
-        case JOAPA_SINK:
-            printf("Switching sink:\n");
-            break;
-    }
-    
-    printf("\tdevice: %s\n", device.name);
-    printf("\tport: %s\n", port.name);
-    
     pa_mainloop *pa_ml;
     pa_mainloop_api *pa_mlapi;
     pa_operation *pa_op;
