@@ -64,20 +64,32 @@ AppIndicator *indicator;
 GtkWidget *menu;
 
 int main(int argc, char *argv[]) {
-    pa_devicelist_t pa_input_devicelist[16];
-    pa_devicelist_t pa_output_devicelist[16];
+    
+    pid_t pID = fork();
+    
+    if(pID == 0) { // child
+        pa_devicelist_t pa_input_devicelist[16];
+        pa_devicelist_t pa_output_devicelist[16];
 
-    if (pa_get_devicelist(pa_input_devicelist, pa_output_devicelist) < 0) {
-        fprintf(stderr, "failed to get device list\n");
-        return 1;
+        if (pa_get_devicelist(pa_input_devicelist, pa_output_devicelist) < 0) {
+            fprintf(stderr, "failed to get device list\n");
+            return 1;
+        }
+        
+        init_app_indicator(argc, argv);
+        fill_app_indicator(pa_input_devicelist, pa_output_devicelist);
+        
+        gtk_main ();
+        
+        return 0;
     }
-    
-    init_app_indicator(argc, argv);
-    fill_app_indicator(pa_input_devicelist, pa_output_devicelist);
-    
-    gtk_main ();
-    
-    return 0;
+    else if(pID < 0) {
+        fprintf(stderr, "Failed to fork\n");
+        exit(1);
+    }
+    else {
+        return 0;
+    }
 }
 
 static void activate_action (GtkWidget *button, pa_device_port_t *data) {
