@@ -1,7 +1,13 @@
+/* Some of this code is stolen from: http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/Clients/Samples/AsyncDeviceList/
+
+PulseAudio docs: http://www.freedesktop.org/software/pulseaudio/doxygen/
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <pulse/pulseaudio.h>
 #include <libappindicator/app-indicator.h>
+#include <libnotify/notify.h>
 
 enum {
     JOAPA_SINK, JOAPA_SOURCE
@@ -54,7 +60,6 @@ void print_devicelist(pa_devicelist_t device) {
     printf("\n");
 }
 
-// Lets say about 30 pcs
 typedef struct pa_clientlist {
     uint32_t index;
     int initialized;
@@ -80,10 +85,7 @@ AppIndicator *indicator;
 GtkWidget *menu;
 
 int main(int argc, char *argv[]) {
-    // This is where we'll store the input device list
     pa_devicelist_t pa_input_devicelist[16];
-
-    // This is where we'll store the output device list
     pa_devicelist_t pa_output_devicelist[16];
 
     if (pa_get_devicelist(pa_input_devicelist, pa_output_devicelist) < 0) {
@@ -91,24 +93,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    /*
-    int ctr;
-    for (ctr = 0; ctr < 16; ctr++) {
-        if (! pa_input_devicelist[ctr].initialized) {
-            break;
-        }
-        printf("=======[ Output Device #%d ]=======\n", ctr+1);
-        print_devicelist(pa_output_devicelist[ctr]);
-    }
-
-    for (ctr = 0; ctr < 16; ctr++) {
-        if (! pa_input_devicelist[ctr].initialized) {
-            break;
-        }
-        printf("=======[ Input Device #%d ]=======\n", ctr+1);
-        print_devicelist(pa_input_devicelist[ctr]);
-    }
-    */
     init_app_indicator(argc, argv);
     fill_app_indicator(pa_input_devicelist, pa_output_devicelist);
     
@@ -117,23 +101,20 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-static void activate_action (GtkWidget *button, pa_device_port_t *data)
-{
-    // Used for testing
-    // Should be removed sometime
-    GtkWidget *dialog;
+static void activate_action (GtkWidget *button, pa_device_port_t *data) {
     
-    dialog = gtk_message_dialog_new (NULL,
-                                   GTK_DIALOG_DESTROY_WITH_PARENT,
-                                   GTK_MESSAGE_INFO,
-                                   GTK_BUTTONS_CLOSE,
-                                   "You activated action: \n%s\n%s", data->device.description, data->port.description);
-
-    g_signal_connect (dialog, "response",
-                    G_CALLBACK (gtk_widget_destroy), NULL);
-
-    gtk_widget_show (dialog);
     
+    char str[512];
+    strcpy(str, data->device.description);
+    strcat(str, "\n");
+    strcat(str, data->port.description);
+    
+    notify_init ("PA device switcher");
+	NotifyNotification * notification = notify_notification_new ("PA device switcher", 
+	    str, 
+	    data->port.description);
+	notify_notification_show (notification, NULL);
+	
     set_active_port(data->device, data->port);
 }
 
@@ -158,6 +139,12 @@ void *create_list_for_type(pa_devicelist_t *list) {
     }
 }
 
+void add_separator_to_menu() {
+    GtkWidget *separator = gtk_separator_menu_item_new();
+    gtk_menu_append(GTK_MENU_SHELL (menu),separator);
+    gtk_widget_show(separator);
+}
+
 void fill_app_indicator(pa_devicelist_t *input, pa_devicelist_t *output) {
     gtk_widget_destroy(menu);
     GtkWidget *menu_items[3];
@@ -165,18 +152,11 @@ void fill_app_indicator(pa_devicelist_t *input, pa_devicelist_t *output) {
     menu = gtk_menu_new();
     
     create_list_for_type(input);
-    
-    GtkWidget *separator = gtk_separator_menu_item_new();
-    gtk_menu_append(GTK_MENU_SHELL (menu),separator);
-    gtk_widget_show(separator);
-    
+    add_separator_to_menu();
     create_list_for_type(output);
+    add_separator_to_menu();
     
-    GtkWidget *separator2 = gtk_separator_menu_item_new();
-    gtk_menu_append(GTK_MENU_SHELL (menu),separator2);
-    gtk_widget_show(separator2);
-    
-     GtkWidget *btn_quit = gtk_menu_item_new_with_label("Quit");
+    GtkWidget *btn_quit = gtk_menu_item_new_with_label("Quit");
         gtk_menu_append(GTK_MENU_SHELL (menu),btn_quit);
         gtk_widget_show(btn_quit);
     

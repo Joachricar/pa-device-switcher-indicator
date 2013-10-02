@@ -7,3 +7,4 @@ gcc pa_device_switcher_indicator.c `pkg-config --cflags gtk+-2.0` -I/usr/include
 TODO:
 daemon
 hotkeys?
+change icon
