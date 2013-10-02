@@ -1,0 +1,3 @@
+BUILD:
+
+gcc pa_device_switcher_indicator.c `pkg-config --cflags gtk+-2.0` -I/usr/include/libappindicator-0.1/  -o pa-device-switcher-indicator `pkg-config --libs gtk+-2.0` -L/usr/lib -lappindicator -lpulse
