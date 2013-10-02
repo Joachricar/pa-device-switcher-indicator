@@ -1,4 +1,4 @@
-An indicator for quickly switching PulseAudio source or sinks.
+An indicator for quickly switching PulseAudio sound device(source and/or sinks).
 
 Dependencies:
 libnotify
